@@ -13,8 +13,8 @@ SITES = {
 
 NTFY_SERVER = os.getenv("NTFY_SERVER")
 NTFY_TOPIC = os.getenv("NTFY_TOPIC")
-
 BREVO_API_KEY = os.getenv("BREVO_API_KEY")
+
 SENDER = "2023nazmul1234@gmail.com"
 RECEIVER = "smnazmul415@gmail.com"
 
@@ -52,7 +52,11 @@ def get_latest_notice(url):
 
     return None
 
+
 def send_ntfy(title, message):
+    if not NTFY_SERVER or not NTFY_TOPIC:
+        return
+
     try:
         requests.post(
             f"{NTFY_SERVER}/{NTFY_TOPIC}",
@@ -66,7 +70,12 @@ def send_ntfy(title, message):
         print("ntfy notification sent")
     except Exception as e:
         print("ntfy error:", e)
+
+
 def send_email(subject, body):
+    if not BREVO_API_KEY:
+        return
+
     url = "https://api.brevo.com/v3/smtp/email"
 
     headers = {
@@ -89,8 +98,13 @@ def send_email(subject, body):
         "textContent": body
     }
 
-    r = requests.post(url, headers=headers, json=payload, timeout=30)
-    print("Email Status:", r.status_code)
+    try:
+        r = requests.post(url, headers=headers, json=payload, timeout=30)
+        print("Email Status:", r.status_code)
+        print(r.text)
+    except Exception as e:
+        print("Email error:", e)
+
 
 def check_sites():
     last = load_last()
@@ -103,19 +117,16 @@ def check_sites():
             if not notice:
                 continue
 
-           if notice["link"] != last.get(name, ""):
-    send_ntfy(
-        f"New Notice ({name.upper()})",
-        f'{notice["title"]}\n\n{notice["link"]}'
-    )
+            if notice["link"] != last.get(name, ""):
+                subject = f"New Notice ({name.upper()})"
+                body = f'{notice["title"]}\n\n{notice["link"]}'
 
-    send_email(
-        f"New Notice ({name.upper()})",
-        f'{notice["title"]}\n\n{notice["link"]}'
-    )
+                send_ntfy(subject, body)
+                send_email(subject, body)
 
-    last[name] = notice["link"]
-    updated = True
+                last[name] = notice["link"]
+                updated = True
+
         except Exception as e:
             print(name, e)
 
