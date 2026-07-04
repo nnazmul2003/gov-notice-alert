@@ -52,5 +52,48 @@ def get_latest_notice(url):
 
     return None
 
+def send_ntfy(title, message):
+    try:
+        requests.post(
+            f"{NTFY_SERVER}/{NTFY_TOPIC}",
+            data=message.encode("utf-8"),
+            headers={
+                "Title": title,
+                "Priority": "default"
+            },
+            timeout=20
+        )
+        print("ntfy notification sent")
+    except Exception as e:
+        print("ntfy error:", e)
 
+
+def check_sites():
+    last = load_last()
+    updated = False
+
+    for name, url in SITES.items():
+        try:
+            notice = get_latest_notice(url)
+
+            if not notice:
+                continue
+
+            if notice["link"] != last.get(name, ""):
+                send_ntfy(
+                    f"New Notice ({name.upper()})",
+                    f'{notice["title"]}\n\n{notice["link"]}'
+                )
+
+                last[name] = notice["link"]
+                updated = True
+
+        except Exception as e:
+            print(name, e)
+
+    if updated:
+        save_last(last)
+
+
+check_sites()
 print("Government Notice Checker Started")
