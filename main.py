@@ -66,7 +66,31 @@ def send_ntfy(title, message):
         print("ntfy notification sent")
     except Exception as e:
         print("ntfy error:", e)
+def send_email(subject, body):
+    url = "https://api.brevo.com/v3/smtp/email"
 
+    headers = {
+        "accept": "application/json",
+        "api-key": BREVO_API_KEY,
+        "content-type": "application/json"
+    }
+
+    payload = {
+        "sender": {
+            "name": "Gov Notice Alert",
+            "email": SENDER
+        },
+        "to": [
+            {
+                "email": RECEIVER
+            }
+        ],
+        "subject": subject,
+        "textContent": body
+    }
+
+    r = requests.post(url, headers=headers, json=payload, timeout=30)
+    print("Email Status:", r.status_code)
 
 def check_sites():
     last = load_last()
@@ -84,7 +108,10 @@ def check_sites():
                     f"New Notice ({name.upper()})",
                     f'{notice["title"]}\n\n{notice["link"]}'
                 )
-
+send_email(
+    f"New Notice ({name.upper()})",
+    f'{notice["title"]}\n\n{notice["link"]}'
+)
                 last[name] = notice["link"]
                 updated = True
 
