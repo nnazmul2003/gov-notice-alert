@@ -13,6 +13,7 @@ SITES = {
 
 NTFY_SERVER = os.getenv("NTFY_SERVER")
 NTFY_TOPIC = os.getenv("NTFY_TOPIC")
+
 BREVO_API_KEY = os.getenv("BREVO_API_KEY")
 
 SENDER = "2023nazmul1234@gmail.com"
@@ -103,7 +104,7 @@ def send_email(subject, body):
         print("Email Status:", r.status_code)
         print(r.text)
     except Exception as e:
-        print("Email error:", e)
+        print("Email Error:", e)
 
 
 def check_sites():
@@ -118,11 +119,12 @@ def check_sites():
                 continue
 
             if notice["link"] != last.get(name, ""):
-                subject = f"New Notice ({name.upper()})"
-                body = f'{notice["title"]}\n\n{notice["link"]}'
 
-                send_ntfy(subject, body)
-                send_email(subject, body)
+                title = f"New Notice ({name.upper()})"
+                body = f"{notice['title']}\n\n{notice['link']}"
+
+                send_ntfy(title, body)
+                send_email(title, body)
 
                 last[name] = notice["link"]
                 updated = True
@@ -135,4 +137,5 @@ def check_sites():
 
 
 check_sites()
+
 print("Government Notice Checker Started")
