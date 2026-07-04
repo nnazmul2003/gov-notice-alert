@@ -42,14 +42,22 @@ def get_latest_notice(url):
 
     soup = BeautifulSoup(r.text, "lxml")
 
-    for a in soup.find_all("a", href=True):
-        text = a.get_text(" ", strip=True)
+    # টেবিলের সব row বের করি
+    rows = soup.select("table tr")
 
-        if len(text) > 8:
-            return {
-                "title": text,
-                "link": urljoin(url, a["href"])
-            }
+    for row in rows[1:]:  # header skip
+        cols = row.find_all("td")
+
+        if len(cols) >= 2:
+            title = cols[1].get_text(" ", strip=True)
+
+            link_tag = cols[1].find("a")
+
+            if link_tag:
+                return {
+                    "title": title,
+                    "link": urljoin(url, link_tag["href"])
+                }
 
     return None
 
