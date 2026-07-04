@@ -103,18 +103,19 @@ def check_sites():
             if not notice:
                 continue
 
-            if notice["link"] != last.get(name, ""):
-                send_ntfy(
-                    f"New Notice ({name.upper()})",
-                    f'{notice["title"]}\n\n{notice["link"]}'
-                )
-send_email(
-    f"New Notice ({name.upper()})",
-    f'{notice["title"]}\n\n{notice["link"]}'
-)
-                last[name] = notice["link"]
-                updated = True
+           if notice["link"] != last.get(name, ""):
+    send_ntfy(
+        f"New Notice ({name.upper()})",
+        f'{notice["title"]}\n\n{notice["link"]}'
+    )
 
+    send_email(
+        f"New Notice ({name.upper()})",
+        f'{notice["title"]}\n\n{notice["link"]}'
+    )
+
+    last[name] = notice["link"]
+    updated = True
         except Exception as e:
             print(name, e)
 
