@@ -115,47 +115,22 @@ def send_email(subject, body):
 
 
 def check_sites():
-    print("===== START CHECK =====")
+    print("===== TEST MODE =====")
 
-    last = load_last()
-    updated = False
+    title = "GitHub Test Notification"
+    body = """এটি একটি টেস্ট মেসেজ।
 
-    for name, url in SITES.items():
+যদি এই মেইল বা ntfy নোটিফিকেশন পান,
+তাহলে Brevo এবং ntfy ঠিকভাবে কাজ করছে।
+"""
 
-        print(f"Checking site: {name}")
-        print(f"URL: {url}")
+    print("Sending ntfy...")
+    send_ntfy(title, body)
 
-        try:
-            notice = get_latest_notice(url)
+    print("Sending email...")
+    send_email(title, body)
 
-            print("Notice:", notice)
-
-            if not notice:
-                print("No notice found.")
-                continue
-
-            title = f"TEST - {name.upper()} Notice"
-            body = f"{notice['title']}\n\n{notice['link']}"
-
-            print("Sending ntfy...")
-            send_ntfy(title, body)
-
-            print("Sending email...")
-            send_email(title, body)
-
-            print("Test notification sent.")
-
-            if notice["link"] != last.get(name, ""):
-                last[name] = notice["link"]
-                updated = True
-
-        except Exception as e:
-            print(f"ERROR ({name}):", e)
-
-    if updated:
-        save_last(last)
-
-    print("===== END CHECK =====")
+    print("Test notification sent successfully.")
 
 
 check_sites()
