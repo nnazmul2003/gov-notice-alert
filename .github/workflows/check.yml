@@ -1,4 +1,4 @@
-name: MOFA Notice Telegram Alert
+name: MOPA Notice Telegram Alert
 
 on:
   schedule:
@@ -25,13 +25,13 @@ jobs:
         python -m pip install --upgrade pip
         pip install requests beautifulsoup4
 
-    - name: Run MOFA notice checker
-      run: python mofa_main.py  # পাইথন ফাইলের নাম
+    - name: Run MOPA notice checker
+      run: python mopa_main.py  # আপনার নতুন পাইথন ফাইলের নাম
 
     - name: Commit and Push changes
       run: |
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
-        git add mofa_notices.txt || true  
-        git commit -m "Update MOFA notices list [skip ci]" || true
+        git add mopa_notices.txt || true  # MOPA ট্র্যাক ফাইলের নাম
+        git commit -m "Update MOPA notices list [skip ci]" || true
         git push || true
