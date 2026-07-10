@@ -1,39 +1,37 @@
-name: Government Notice Checker
+name: MOFA Notice Telegram Alert
 
 on:
   schedule:
-    - cron: "*/10 * * * *"
-  workflow_dispatch:
+    - cron: '*/5 * * * *' # প্রতি ৫ মিনিট পর পর অটোমেটিক চেক করবে
+  workflow_dispatch:      # ম্যানুয়ালি রান করার অপশন
 
 jobs:
-  check:
+  check-notice:
     runs-on: ubuntu-latest
-
     permissions:
-      contents: write
+      contents: write    # ট্র্যাক ফাইল গিটহাবে পুশ করার পারমিশন
 
     steps:
-      - uses: actions/checkout@v4
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
 
-      - name: Install requirements
-        run: |
-          pip install requests beautifulsoup4 lxml
+    - name: Install requirements
+      run: |
+        python -m pip install --upgrade pip
+        pip install requests beautifulsoup4
 
-      - name: Run Script
-        env:
-          NTFY_SERVER: ${{ secrets.NTFY_SERVER }}
-          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
-          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
-        run: python main.py
+    - name: Run MOFA notice checker
+      run: python mofa_main.py  # পাইথন ফাইলের নাম
 
-      - name: Commit last_notice.json
-        run: |
-          git config user.name github-actions
-          git config user.email github-actions@github.com
-          git add last_notice.json
-          git diff --cached --quiet || git commit -m "Update last notice"
-          git push
+    - name: Commit and Push changes
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git add mofa_notices.txt || true  
+        git commit -m "Update MOFA notices list [skip ci]" || true
+        git push || true
