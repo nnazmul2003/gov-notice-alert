@@ -1,1 +1,6 @@
 
+requests
+beautifulsoup4
+urllib3
+flask
+gunicorn
