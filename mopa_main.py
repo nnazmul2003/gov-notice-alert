@@ -1,18 +1,35 @@
+import os
+import time
 import requests
 from bs4 import BeautifulSoup
-import os
 import urllib3
+from flask import Flask
+from threading import Thread
 
-# SSL সার্টিফিকেট ভেরিফিকেশন এরর এড়াতে ওয়ার্নিং মেসেজ বন্ধ করা হয়েছে
+# SSL certificate error avoid korar jnno warning off kora holo
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-# --- কনফিগারেশন ---
-URL = "https://mopa.gov.bd/views/latest-news"
-TELEGRAM_TOKEN = "8535636772:AAHvIK1Lgu90_K5PkCHxQjnCwzKmIVfkYjo"  # আপনার দেওয়া নতুন টোকেন
-CHAT_ID = "6382850126"                             
-TRACK_FILE = "mopa_notices.txt"                    # MOPA এর জন্য আলাদা ট্র্যাকিং ফাইল
+# --- Flask Server setup Render-er active thakar jnno ---
+app = Flask('')
 
-# ফাইল চেক এবং রিড
+@app.route('/')
+def home():
+    return "MOPA Notice Bot is Running!"
+
+def run_flask():
+    # Render default portfolio port use korbe, na thakle 8080
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host='0.0.0.0', port=port)
+
+# --- Bot Config & Scraper Logic ---
+URL = "https://mopa.gov.bd/views/latest-news"
+
+# Env variables theke data nibe, na thakle hardcoded backup
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN", "8535636772:AAHvIK1Lgu90_K5PkCHxQjnCwzKmIVfkYjo")
+CHAT_ID = os.getenv("CHAT_ID", "6382850126")                             
+TRACK_FILE = "mopa_notices.txt"                    
+
+# Track file check and read
 if os.path.exists(TRACK_FILE):
     with open(TRACK_FILE, "r", encoding="utf-8") as f:
         sent_notices = set(f.read().splitlines())
@@ -23,9 +40,11 @@ def send_telegram_message(text):
     telegram_url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     payload = {"chat_id": CHAT_ID, "text": text, "parse_mode": "Markdown"}
     try:
-        requests.post(telegram_url, json=payload, timeout=10)
+        response = requests.post(telegram_url, json=payload, timeout=10)
+        if response.status_code != 200:
+            print(f"❌ Telegram Error Status: {response.status_code}")
     except Exception as e:
-        print(f"❌ টেলিগ্রাম এরর: {e}")
+        print(f"❌ Telegram error: {e}")
 
 def check_recent_notice():
     global sent_notices
@@ -45,37 +64,28 @@ def check_recent_notice():
             rows = table.find_all('tr')
             new_count = 0
             
-            # পুরানো থেকে নতুনের দিকে (নিচ থেকে উপরে) লুপ চলবে
             for row in reversed(rows):
                 columns = row.find_all('td')
-                
-                # টেবিলে কমপক্ষে ৩টি কলাম থাকতে হবে (ক্রমিক, শিরোনাম, তারিখ)
                 if len(columns) < 3:
                     continue
                 
                 link_element = row.find('a', href=True)
                 if link_element:
                     link = link_element['href']
-                    
-                    # ২য় কলামে থাকে নোটিশের শিরোনাম এবং ৩য় কলামে প্রকাশের তারিখ
                     title = columns[1].text.strip()
                     published_date = columns[2].text.strip()
                     
-                    # সাইটের ডোমেইন লিংক ঠিক করা
                     if link.startswith('/'):
                         link = f"https://mopa.gov.bd{link}"
                     elif not link.startswith('http'):
                         link = f"https://mopa.gov.bd/views/latest-news/{link}"
                         
-                    # সার্কুলার ফিল্টার
                     if "circular" in title.lower() or "সার্কুলার" in title:
                         continue
                         
-                    # অলরেডি পাঠানো নোটিশ হলে স্কিপ করবে
                     if link in sent_notices:
                         continue
                     
-                    # 🔔 টেলিগ্রাম মেসেজ ফরম্যাট
                     message = (
                         f"🏛️ *MOPA (জনপ্রশাসন মন্ত্রণালয়) সর্বশেষ খবর!*\n\n"
                         f"📌 *শিরোনাম:* {title}\n\n"
@@ -86,7 +96,6 @@ def check_recent_notice():
                     send_telegram_message(message)
                     print(f"✅ নতুন বটে পাঠানো হয়েছে: {title}")
                     
-                    # ট্র্যাকিং ফাইলে সেভ করা
                     with open(TRACK_FILE, "a", encoding="utf-8") as f:
                         f.write(link + "\n")
                     sent_notices.add(link)
@@ -100,5 +109,17 @@ def check_recent_notice():
     except Exception as e:
         print(f"❌ ত্রুটি: {e}")
 
+def bot_loop():
+    while True:
+        check_recent_notice()
+        print("😴 5 minutes-er jnno script ghumacche...")
+        time.sleep(300) # 5 mins wait
+
 if __name__ == "__main__":
-    check_recent_notice()
+    # Background thread-e flask server start kora hobe jate render active thake
+    server_thread = Thread(target=run_flask)
+    server_thread.daemon = True
+    server_thread.start()
+    
+    # Main thread-e scraper cholbe
+    bot_loop()
